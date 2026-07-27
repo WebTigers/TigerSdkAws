@@ -1,0 +1,6 @@
+# The vendored SDK bundle is a RELEASE artifact, built by CI (bin/build-bundle.sh) — never committed.
+/vendor/
+/dist/
+composer.lock
+.idea/
+.DS_Store

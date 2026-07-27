@@ -1,0 +1,3 @@
+# This module intentionally ships no controllers.
+# The directory must exist so ZF1 registers the module and runs its Bootstrap.php
+# (the modules resource only bootstraps modules present in the controller-directory map).

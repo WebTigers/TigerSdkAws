@@ -1,0 +1,56 @@
+name: Vendor + release the AWS SDK bundle
+
+# Tracks upstream aws/aws-sdk-php: rebuilds the vendored bundle weekly (and on demand), and cuts a
+# GitHub release tagged with the exact SDK version — but ONLY when that version isn't already released.
+# The last N releases become the "available versions" the Tiger Module Manager sees; the newest is Latest.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'   # Mondays 06:17 UTC — pick up the week's aws-sdk-php releases
+  workflow_dispatch: {}
+
+permissions:
+  contents: write            # create releases + upload assets
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'   # build on the floor PHP so the bundle runs on every supported target
+          tools: composer
+
+      - name: Build the vendored bundle
+        id: build
+        run: |
+          chmod +x bin/build-bundle.sh
+          ./bin/build-bundle.sh | tee build.log
+          echo "sdk_version=$(grep '^SDK_VERSION=' build.log | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if this SDK version is already released
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ steps.build.outputs.sdk_version }}"
+          if gh release view "$V" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release $V already exists — nothing to do."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create the release
+        if: steps.gate.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ steps.build.outputs.sdk_version }}"
+          gh release create "$V" \
+            "dist/tiger-sdk-aws-${V}.zip" \
+            "dist/tiger-sdk-aws-${V}.zip.sha256" \
+            --title "AWS SDK for PHP ${V}" \
+            --notes "Vendored bundle of aws/aws-sdk-php ${V} (+ dependencies) packaged as a Tiger provider module. Install/update via the Tiger Module Manager — no Composer required on the target."
