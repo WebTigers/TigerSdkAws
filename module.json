@@ -1,7 +1,7 @@
 {
     "slug": "tiger-sdk-aws",
     "name": "Tiger AWS PHP SDK",
-    "version": "3.393.4",
+    "version": "0.0.0-dev",
     "type": "sdk",
     "description": "Vendors the AWS SDK for PHP so Tiger can use Amazon S3 media storage with no Composer on the server. Activate one cloud SDK provider at a time.",
     "author": "WebTigers",
